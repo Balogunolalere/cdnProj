@@ -76,22 +76,32 @@ async def upload_file(file: UploadFile):
 # Route to download file
 @app.get("/files/{filename}")
 async def download_file(filename):
-  try:
-    file = drive.get(filename)
-    contents = file.read()
+    """
+    Download a file from the CDN.
 
-    headers = {
-      'Content-Disposition': f'attachment; filename="{filename}"',
-      'Content-Type': 'application/octet-stream' 
-    }
+    - **filename**: The name of the file to download.
 
-    return Response(content=contents, headers=headers)
+    Returns:
+    - **file**: The file to download.
+    - **error**: An error message if the file could not be downloaded.
+    """
 
-  except FileNotFoundError:
-    raise HTTPException(status_code=404, detail="File not found")
+    try:
+        file = drive.get(filename)
+        contents = file.read()
 
-  except Exception as e:
-    raise HTTPException(status_code=500, detail=str(e))
+        headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"',
+        'Content-Type': 'application/octet-stream' 
+        }
+
+        return Response(content=contents, headers=headers)
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Route to get all files
 @app.get("/files/")
