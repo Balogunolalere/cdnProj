@@ -29,7 +29,7 @@ Install dependencies:
 
 Copy code
 
-`pip install fastapi deta python-dotenv`
+`pip install -r requirements.txt`
 
 Run the service:
 
