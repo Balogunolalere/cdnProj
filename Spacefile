@@ -1,0 +1,15 @@
+# Spacefile Docs: https://go.deta.dev/docs/spacefile/v0
+v: 0
+micros:
+  - name: cdnProj
+    src: ./
+    engine: python3.9
+    primary: true
+    public_routes:
+      - "/*"
+    presets:
+      env:
+        - name: DRIVE_PROJECT_KEY
+        - name: DRIVE_PROJECT_NAME
+
+          
