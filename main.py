@@ -2,12 +2,12 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
+from fastapi.middleware.gzip import GZipMiddleware
 import  deta 
 import logging
 import os
 from dotenv import load_dotenv
-from fastapi import Request
-import datetime
+
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +24,12 @@ app = FastAPI(
 
 # Connect to Deta Drive
 drive = deta.Deta(DRIVE_PROJECT_KEY).Drive(DRIVE_PROJECT_NAME)
+
+
+# Add GZipMiddleware to compress response data
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
 
 # Set maximum file size to 100 MB
 MAX_FILE_SIZE = 100 * 1024 * 1024
@@ -215,3 +221,4 @@ async def root():
     </html>
     """
     return HTMLResponse(content=html_content, status_code=200)
+
