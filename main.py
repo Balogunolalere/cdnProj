@@ -1,10 +1,13 @@
 # Import FastAPI and Deta Drive libraries
 from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
 import  deta 
 import logging
 import os
 from dotenv import load_dotenv
+from fastapi import Request
+import datetime
 
 # Load environment variables
 load_dotenv()
@@ -180,3 +183,35 @@ async def delete_file(filename):
     except Exception as e:
         logging.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
+    
+# Route to get file metadata    
+@app.get("/")
+async def root():
+    '''
+    Home page for API
+    '''
+    html_content = """
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+          }
+          h1 {
+            color: #2F80ED; 
+          }
+          p {
+            font-size: 20px;
+          }
+        </style>  
+      </head>
+      <body>
+        <h1>Welcome! 👋</h1>
+        <p>This is the home page for my awesome API!</p>
+        <p>Check out the docs below to get started ⬇️</p>
+        <a href="/docs">Documentation</a>
+      </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
