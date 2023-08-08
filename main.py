@@ -146,3 +146,34 @@ async def get_files():
     except Exception as e:
         logging.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
+    
+# Route to delete file
+@app.delete("/files/{filename}")
+async def delete_file(filename):
+    """
+    Delete a file from the CDN.
+
+    - **filename**: The name of the file to delete.
+
+    Returns:
+    - **message**: A success message if the file was deleted successfully.
+    - **error**: An error message if the file could not be deleted.
+    """
+    try:
+        # Check if file exists
+        existing = drive.get(filename)
+        if not existing:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Delete file from Deta Drive
+        drive.delete(filename)
+
+        # Log file deletion event
+        logging.info(f"File deleted: {filename}")
+
+        # Return success message to client
+        return {"message": "File deleted successfully"}
+
+    except Exception as e:
+        logging.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
