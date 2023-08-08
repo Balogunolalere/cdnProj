@@ -32,7 +32,7 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 logging.basicConfig(filename='app.log', level=logging.DEBUG)
 
 # Route to upload file 
-@app.post("/uploadfile/")
+@app.post("/cdn/v1/uploadfile/")
 async def upload_file(file: UploadFile):
     """
     Upload a file to the CDN.
@@ -74,7 +74,7 @@ async def upload_file(file: UploadFile):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Route to download file
-@app.get("/files/{filename}") 
+@app.get("/cdn/v1/files/{filename}") 
 async def download_file(filename):
 
     try:
@@ -107,7 +107,7 @@ async def download_file(filename):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Route to get all files
-@app.get("/files/")
+@app.get("/cdn/v1/files/")
 async def get_files():
     """
     Get a list of all files in the CDN.
@@ -151,7 +151,7 @@ async def get_files():
         raise HTTPException(status_code=500, detail=str(e))
     
 # Route to delete file
-@app.delete("/files/{filename}")
+@app.delete("/cdn/v1/files/{filename}")
 async def delete_file(filename):
     """
     Delete a file from the CDN.
