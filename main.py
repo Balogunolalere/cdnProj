@@ -74,45 +74,24 @@ async def upload_file(file: UploadFile):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Route to download file
-@app.get("/files/{filename}") 
+@app.get("/files/{filename}")
 async def download_file(filename):
-    """
-    Download a file from the CDN.
+  try:
+    file = drive.get(filename)
+    contents = file.read()
 
-    - **filename**: The name of the file to download.
+    headers = {
+      'Content-Disposition': f'attachment; filename="{filename}"',
+      'Content-Type': 'application/octet-stream' 
+    }
 
-    Returns:
-    - **file**: The file to download.
-    - **error**: An error message if the file could not be downloaded.
-    """
-    try:
-        file = drive.get(filename)
-        contents = file.read()
+    return Response(content=contents, headers=headers)
 
-        headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"',
-            'Content-Type': 'application/octet-stream'
-        }
+  except FileNotFoundError:
+    raise HTTPException(status_code=404, detail="File not found")
 
-        response = Response(content=contents, headers=headers)
-        response.headers["Content-Transfer-Encoding"] = "binary"
-        
-        # Log file download event
-        logging.info(f"File downloaded: {filename}")
-
-        return response 
-    
-    except FileNotFoundError:
-        logging.error("File not found")
-        raise HTTPException(status_code=404, detail="File not found")
-
-    except ConnectionError:
-        logging.error("Error connecting to storage")
-        raise HTTPException(status_code=500, detail="Error connecting to storage")    
-
-    except Exception as e:
-        logging.error(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=str(e))
 
 # Route to get all files
 @app.get("/files/")
