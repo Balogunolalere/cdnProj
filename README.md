@@ -35,7 +35,7 @@ Run the service:
 
 Copy code
 
-`uvicorn main:app`
+`uvicorn main:app --reload`
 
 The API will then be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
