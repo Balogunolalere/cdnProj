@@ -2,7 +2,6 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
-
 import  deta 
 import logging
 import os
@@ -28,8 +27,8 @@ drive = deta.Deta(DRIVE_PROJECT_KEY).Drive(DRIVE_PROJECT_NAME)
 # Set maximum file size to 100 MB
 MAX_FILE_SIZE = 100 * 1024 * 1024
 
-# Set allowed file extensions
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+# Set allowed file extensions. 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'ico', 'svg', 'bmp', 'webp', 'tiff', 'psd'}
 
 # Initialize logger
 logging.basicConfig(filename='app.log', level=logging.DEBUG)
@@ -82,7 +81,7 @@ async def download_file(filename):
 
     try:
         # Check if image file
-        if filename.split('.')[-1] in {'png', 'jpg', 'jpeg', 'gif'}:
+        if filename.split('.')[-1] in ALLOWED_EXTENSIONS:
             
             # Retrieve file data without sending to client yet
             file = drive.get(filename)
@@ -90,18 +89,9 @@ async def download_file(filename):
             
             # Send file to client with appropriate media type eg, image/png or image/jpeg etc
             return Response(content=image_data, media_type=f"image/{filename.split('.')[-1]}")
-
         else:
-            # For non-image files, download normally
-            file = drive.get(filename)
-            contents = file.read()
-
-            headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"',
-            'Content-Type': 'application/octet-stream'
-            }
-
-            return Response(content=contents, headers=headers)
+            # return error message if file is not an image
+            raise HTTPException(status_code=400, detail="File type not allowed")
 
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
