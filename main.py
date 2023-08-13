@@ -3,7 +3,6 @@ from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.responses import Response
 import  deta 
-import logging
 import os
 from dotenv import load_dotenv
 
@@ -30,9 +29,6 @@ MAX_FILE_SIZE = 100 * 1024 * 1024
 # Set allowed file extensions. 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'ico', 'svg', 'bmp', 'webp', 'tiff', 'psd'}
 
-# Initialize logger
-logging.basicConfig(filename='app.log', level=logging.DEBUG)
-
 # Route to upload file 
 @app.post("/cdn/v1/uploadfile/")
 async def upload_file(file: UploadFile):
@@ -53,55 +49,57 @@ async def upload_file(file: UploadFile):
             raise HTTPException(status_code=413, detail="File too large")
         
         # Check file extension
-        if file.filename.split('.')[-1] not in ALLOWED_EXTENSIONS:
+        if not file.filename.endswith(tuple(ALLOWED_EXTENSIONS)):
             raise HTTPException(status_code=400, detail="File type not allowed")
 
         # Check if filename already exists
-        existing = drive.get(file.filename)
-        if existing:
+        if drive.get(file.filename):
             return {"error": "File already exists"}
         
         # Save uploaded file to Deta Drive 
         name = file.filename
         drive.put(name, content)
 
-        # Log file upload event
-        logging.info(f"File uploaded: {name}")
+        # get file type
+        file_type = file.filename.split('.')[-1]
 
         # Return success message to client
-        return {"message": "File uploaded successfully"}
+        return {"filename": name, "type": file_type, "message": "File uploaded successfully"}
     
     except Exception as e:
-        logging.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 # Route to download file
 @app.get("/cdn/v1/files/{filename}") 
-async def download_file(filename):
+async def get_file(filename: str):
+    """
+    Download a file from the CDN.
 
+    - **filename**: The name of the file to download.
+
+    Returns:
+    - **response**: The file to download.
+    - **error**: An error message if the file could not be downloaded.
+    """
     try:
-        # Check if image file
-        if filename.split('.')[-1] in ALLOWED_EXTENSIONS:
-            
-            # Retrieve file data without sending to client yet
-            file = drive.get(filename)
-            image_data = file.read()
-            
-            # Send file to client with appropriate media type eg, image/png or image/jpeg etc
-            return Response(content=image_data, media_type=f"image/{filename.split('.')[-1]}")
-        else:
-            # return error message if file is not an image
-            raise HTTPException(status_code=400, detail="File type not allowed")
+        # Check if file exists
+        if not drive.get(filename):
+            raise HTTPException(status_code=404, detail="File not found")
 
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File not found")
+        # Retrieve file data without sending to client yet
+        file_data = drive.get(filename).read()
 
+        # Send file to client with appropriate media type eg, image/png or image/jpeg etc
+        media_type = f"image/{filename.split('.')[-1]}"
+        return Response(content=file_data, media_type=media_type)
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
 
 # Route to get all files
 @app.get("/cdn/v1/files/")
-async def get_files():
+async def get_files_name():
     """
     Get a list of all files in the CDN.
 
@@ -110,42 +108,29 @@ async def get_files():
     - **error**: An error message if the file list could not be retrieved.
     """
     try:
-    
-        # Get all files from Deta Drive
-        result = drive.list()
-        all_files = result.get("names")
-        paging = result.get("paging", {})
-        size = len(all_files)
-        last = paging.get("last", None)
+        all_files = []
+        last = None
 
-        while last:
-            # Provide "last" from previous call.
+        while True:
             result = drive.list(last=last)
             all_files += result.get("names")
-            paging = result.get("paging", {})
-            size += len(result.get("names"))
-            last = paging.get("last", None)
+            last = result.get("paging", {}).get("last")
+            if not last:
+                break
 
-        # Create response dictionary
+        size = len(all_files)
         response = {"names": all_files, "paging": {"size": size, "last": last}}
-
-        # Log file list event
-        logging.info("File list retrieved")
-
-        # Return response to client
         return {"response": response}
 
     except ConnectionError:
-        logging.error("Error connecting to storage")
         raise HTTPException(status_code=500, detail="Error connecting to storage")
 
     except Exception as e:
-        logging.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
     
 # Route to delete file
 @app.delete("/cdn/v1/files/{filename}")
-async def delete_file(filename):
+async def delete_file(filename: str):
     """
     Delete a file from the CDN.
 
@@ -157,21 +142,16 @@ async def delete_file(filename):
     """
     try:
         # Check if file exists
-        existing = drive.get(filename)
-        if not existing:
+        if not drive.get(filename):
             raise HTTPException(status_code=404, detail="File not found")
 
         # Delete file from Deta Drive
         drive.delete(filename)
 
-        # Log file deletion event
-        logging.info(f"File deleted: {filename}")
-
         # Return success message to client
         return {"message": "File deleted successfully"}
 
     except Exception as e:
-        logging.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
     
 # Route to get file metadata    
@@ -204,4 +184,4 @@ async def root():
       </body>
     </html>
     """
-    return HTMLResponse(content=html_content, status_code=200)
+    return HTMLResponse(content=html_content)
